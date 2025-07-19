@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cagnotte Casino</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBB7Ya4m72jqcOs8gMTCN3Wy6i2010F4ng",
+      authDomain: "mlb-game-b8c2f.firebaseapp.com",
+      projectId: "mlb-game-b8c2f",
+      storageBucket: "mlb-game-b8c2f.firebasestorage.app",
+      messagingSenderId: "560169148656",
+      appId: "1:560169148656:web:73528ee71183feb191a235",
+      measurementId: "G-8L5TEGTHVY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const userId = prompt("Entre ton identifiant (ex: prénom, code...) pour charger ta sauvegarde :");
+    const userRef = doc(db, "players", userId);
+
+    async function saveGame() {
+      await setDoc(userRef, {
+        score,
+        bisous,
+        maisons,
+        bonusActive,
+        lastSaved: new Date().toISOString()
+      });
+    }
+
+    async function loadGame() {
+      const docSnap = await getDoc(userRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        score = data.score || 0;
+        bisous = data.bisous || 0;
+        maisons = data.maisons || 0;
+        bonusActive = data.bonusActive || false;
+        updateDisplay();
+        if (bonusActive) keyElement.style.display = "block";
+      }
+    }
+
+    window.saveGame = saveGame;
+    window.loadGame = loadGame;
+    window.userId = userId;
+
+    loadGame();
+  </script>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #111;
+      color: #fff;
+      text-align: center;
+      padding-top: 50px;
+    }
+    .scoreboard {
+      background: linear-gradient(#900, #400);
+      border: 5px solid gold;
+      border-radius: 20px;
+      padding: 20px;
+      font-size: 32px;
+      width: 350px;
+      margin: auto;
+      box-shadow: 0 0 20px gold;
+    }
+    button {
+      font-size: 24px;
+      margin: 10px;
+      padding: 10px 30px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+    }
+    #plus1 { background-color: #2ecc71; color: white; }
+    #minus1 { background-color: #e74c3c; color: white; }
+    #bisous { background-color: #f39c12; color: white; }
+    #maison { background-color: #9b59b6; color: white; }
+    #key {
+      display: none;
+      font-size: 32px;
+      margin-top: 20px;
+      animation: blink 1s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+  </style>
+</head>
+<body>
+  <div class="scoreboard">
+    Cagnotte : <span id="score">0</span> €<br>
+    Bisous : <span id="bisousCount">0</span><br>
+    Maisons : <span id="maisonsCount">0</span>
+  </div>
+  <div>
+    <button id="plus1">+1</button>
+    <button id="minus1">-1</button>
+    <button id="bisous">💋 1€ → 5 Bisous</button>
+    <button id="maison">🏠 25€ → 1 Maison</button>
+  </div>
+  <div id="key">🔑 BONUS ACTIVÉ !</div>
+
+  <script>
+    let score = 0;
+    let bisous = 0;
+    let maisons = 0;
+    let bonusActive = false;
+
+    const scoreDisplay = document.getElementById("score");
+    const bisousDisplay = document.getElementById("bisousCount");
+    const maisonsDisplay = document.getElementById("maisonsCount");
+    const keyElement = document.getElementById("key");
+
+    document.getElementById("plus1").addEventListener("click", () => {
+      score += bonusActive ? 2 : 1;
+      updateDisplay();
+      saveGame();
+    });
+
+    document.getElementById("minus1").addEventListener("click", () => {
+      score -= 1;
+      updateDisplay();
+      saveGame();
+    });
+
+    document.getElementById("bisous").addEventListener("click", () => {
+      if (score >= 1) {
+        score -= 1;
+        bisous += 5;
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    document.getElementById("maison").addEventListener("click", () => {
+      if (score >= 25) {
+        score -= 25;
+        maisons += 1;
+        updateDisplay();
+        saveGame();
+      }
+    });
+
+    function updateDisplay() {
+      scoreDisplay.textContent = score;
+      bisousDisplay.textContent = bisous;
+      maisonsDisplay.textContent = maisons;
+    }
+
+    function showKeyForADay() {
+      bonusActive = true;
+      keyElement.style.display = "block";
+      saveGame();
+      setTimeout(() => {
+        bonusActive = false;
+        keyElement.style.display = "none";
+        saveGame();
+        scheduleKeyForNextMonth();
+      }, 24 * 60 * 60 * 1000);
+    }
+
+    function scheduleKeyForNextMonth() {
+      const delayInDays = Math.floor(Math.random() * 30) + 1;
+      const delayInMs = delayInDays * 24 * 60 * 60 * 1000;
+      setTimeout(showKeyForADay, delayInMs);
+    }
+
+    scheduleKeyForNextMonth();
+  </script>
+</body>
+</html>
